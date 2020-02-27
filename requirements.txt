@@ -1,5 +1,6 @@
 boto3==1.7.80
 botocore==1.10.80
 pip-chill==0.1.8
+pytest
 pytest-cov==2.8.1
 python-dateutil==2.7.3
