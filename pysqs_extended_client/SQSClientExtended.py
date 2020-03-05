@@ -36,13 +36,14 @@ class SQSClientExtended(object):
 	:param profile_name: The name of a profile to use. If not given, then the default profile is used.
 	"""
 
-	def __init__(self, aws_access_key_id=None, aws_secret_access_key=None, aws_region_name=None, s3_bucket_name=None):
+	def __init__(self, aws_access_key_id=None, aws_secret_access_key=None, aws_region_name=None, s3_bucket_name=None, delete_from_s3=False):
 		self.aws_access_key_id = aws_access_key_id
 		self.aws_secret_access_key = aws_secret_access_key
 		self.aws_region_name = aws_region_name
 		self.s3_bucket_name = s3_bucket_name
 		self.message_size_threshold = SQSExtendedClientConstants.DEFAULT_MESSAGE_SIZE_THRESHOLD.value
 		self.always_through_s3 = True
+		self.delete_from_s3 = delete_from_s3
 		if aws_access_key_id and aws_secret_access_key and aws_region_name:
 			self.sqs = boto3.client(
 				'sqs',
@@ -181,10 +182,11 @@ class SQSClientExtended(object):
 		a message in the queue for longer than the queue's configured retention period,
 		Amazon SQS automatically deletes the message.
 
-		Additionally to purging the queue of the message any s3 referenced object will be deleted
+		S3 file is deleted if delete_from_s3 is True
 		"""
 		if self.__is_s3_receipt_handle(receipt_handle):
-			self.__delete_message_payload_from_s3(receipt_handle)
+			if self.delete_from_s3:
+				self.__delete_message_payload_from_s3(receipt_handle)
 			receipt_handle = self.__get_orig_receipt_handle(receipt_handle)
 		print("receipt_handle={}".format(receipt_handle))
 		self.sqs.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
