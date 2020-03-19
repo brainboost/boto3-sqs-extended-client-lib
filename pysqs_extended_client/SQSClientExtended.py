@@ -42,7 +42,7 @@ class SQSClientExtended(object):
 		self.aws_region_name = aws_region_name
 		self.s3_bucket_name = s3_bucket_name
 		self.message_size_threshold = SQSExtendedClientConstants.DEFAULT_MESSAGE_SIZE_THRESHOLD.value
-		self.always_through_s3 = True
+		self.always_through_s3 = False
 		self.delete_from_s3 = delete_from_s3
 		if aws_access_key_id and aws_secret_access_key and aws_region_name:
 			self.sqs = boto3.client(
