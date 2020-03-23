@@ -11,7 +11,7 @@ from io import BytesIO
 
 
 class SQSExtendedClientConstants(Enum):
-	DEFAULT_MESSAGE_SIZE_THRESHOLD = 262144
+	DEFAULT_MESSAGE_SIZE_THRESHOLD = 255999
 	MAX_ALLOWED_ATTRIBUTES = 10 - 1  # 10 for SQS, 1 for the reserved attribute
 	RESERVED_ATTRIBUTE_NAME = "SQSLargePayloadSize"
 	S3_BUCKET_NAME_MARKER = "-..s3BucketName..-"
@@ -188,7 +188,7 @@ class SQSClientExtended(object):
 			if self.delete_from_s3:
 				self.__delete_message_payload_from_s3(receipt_handle)
 			receipt_handle = self.__get_orig_receipt_handle(receipt_handle)
-		print("receipt_handle={}".format(receipt_handle))
+		# print("receipt_handle={}".format(receipt_handle))
 		self.sqs.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
 
 	def send_message(self, queue_url, message, message_attributes={}, delay_seconds=0):
