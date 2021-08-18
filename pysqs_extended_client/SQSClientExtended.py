@@ -121,7 +121,8 @@ class SQSClientExtended(object):
 			An MD5 digest of the message attributes.
 			The receipt handle is the identifier you must provide when deleting the message
 		"""
-		response_opt_queue = self.sqs.receive_message(QueueUrl=queue_url, AttributeNames=['All'], MessageAttributeNames=['All', ], MaxNumberOfMessages=max_number_Of_Messages, WaitTimeSeconds=wait_time_seconds,)
+		response_opt_queue = self.sqs.receive_message(QueueUrl=queue_url, AttributeNames=['All'], MessageAttributeNames=[
+		                                              'All', ], MaxNumberOfMessages=max_number_Of_Messages, WaitTimeSeconds=wait_time_seconds,)
 		opt_messages = response_opt_queue.get('Messages', [])
 		if not opt_messages:
 			return None
@@ -141,7 +142,8 @@ class SQSClientExtended(object):
 					# remove the additional attribute before returning the message to user.
 					message.get('MessageAttributes').pop(SQSExtendedClientConstants.RESERVED_ATTRIBUTE_NAME.value)
 					# Embed s3 object pointer in the receipt handle.
-					modified_receipt_handle = SQSExtendedClientConstants.S3_BUCKET_NAME_MARKER.value + s3_bucket_name + SQSExtendedClientConstants.S3_BUCKET_NAME_MARKER.value + SQSExtendedClientConstants.S3_KEY_MARKER.value + s3_key + SQSExtendedClientConstants.S3_KEY_MARKER.value + message.get('ReceiptHandle')
+					modified_receipt_handle = SQSExtendedClientConstants.S3_BUCKET_NAME_MARKER.value + s3_bucket_name + SQSExtendedClientConstants.S3_BUCKET_NAME_MARKER.value + \
+					    SQSExtendedClientConstants.S3_KEY_MARKER.value + s3_key + SQSExtendedClientConstants.S3_KEY_MARKER.value + message.get('ReceiptHandle')
 					message['ReceiptHandle'] = modified_receipt_handle
 				except ValueError:
 					raise ValueError('Decoding JSON has failed')
@@ -191,7 +193,7 @@ class SQSClientExtended(object):
 		# print("receipt_handle={}".format(receipt_handle))
 		self.sqs.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
 
-	def send_message(self, queue_url, message, message_attributes={}, delay_seconds=0):
+	def send_message(self, queue_url, message, message_attributes=None, delay_seconds=0):
 		"""
 		Delivers a message to the specified queue and uploads the message payload
 		to Amazon S3 if necessary.
@@ -199,14 +201,21 @@ class SQSClientExtended(object):
 		if message is None:
 			raise ValueError('message_body required')
 
-		msg_attributes_size = self.__get_msg_attributes_size(message_attributes)
-		if msg_attributes_size > self.message_size_threshold:
-			raise ValueError("Total size of Message attributes is {} bytes which is larger than the threshold of {} Bytes. Consider including the payload in the message body instead of message attributes.".format(msg_attributes_size, self.message_size_threshold))
+		"""
+    message_attributes={} is dangerous if your function will modify the argument.
+    If you modify a default argument, it will persist until the next call,
+    so your "empty" dict will start to contain values on calls other than the first one.
+
+    Using None is both safe and conventional in cases where arguments with default value are not passed.
+		"""
+
+		if message_attributes is None:
+			message_attributes = dict()
 
 		message_attributes_number = len(message_attributes)
 		if message_attributes_number > SQSExtendedClientConstants.MAX_ALLOWED_ATTRIBUTES.value:
 			raise ValueError("Number of message attributes [{}}] exceeds the maximum allowed for large-payload messages [{}].".format(message_attributes_number, SQSExtendedClientConstants.MAX_ALLOWED_ATTRIBUTES.value))
-
+			
 		large_payload_attribute_value = message_attributes.get(SQSExtendedClientConstants.RESERVED_ATTRIBUTE_NAME.value)
 		if large_payload_attribute_value:
 			raise ValueError("Message attribute name {} is reserved for use by SQS extended client.".format(SQSExtendedClientConstants.RESERVED_ATTRIBUTE_NAME.value))
